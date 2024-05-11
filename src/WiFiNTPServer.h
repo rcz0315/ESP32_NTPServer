@@ -3,7 +3,7 @@
 /*
  * WiFiNTPServer.h
  *
- * Implements a basic WiFi-compatible NTP Server. Tested on ESP8266.
+ * Implements a basic WiFi-compatible NTP Server. Tested on ESP32.
  */
 
 #include "NTPServer.h"
