@@ -68,7 +68,7 @@ void loop() {
     ntpServer.setReferenceTime(newTime, (esp_timer_get_time() / 1000));
 
     // Uncomment and monitor the GPS output on the serial port
-    //Serial.print(c());
+    //Serial.print(c);
     
     // Uncomment and monitor the system time output on the serial port
     /*
