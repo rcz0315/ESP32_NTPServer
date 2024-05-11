@@ -3,29 +3,31 @@
 #include <WiFi.h>
 #include <esp_timer.h>
 
-#include "WiFiNTPServer.h"  // 引入 NTPServer 库
+//#include <TimeLib.h>
 
-// 设置静态IP信息
+#include "WiFiNTPServer.h"  // Introduce NTPServer library
+
+// Set static IP information
 IPAddress local_IP(*************);
 IPAddress gateway((*************););
 IPAddress subnet((*************););
 IPAddress primaryDNS((*************););
 
-// TinyGPSPlus 实例
+// TinyGPSPlus instance
 TinyGPSPlus gps;
 
-// 与 GPS 设备的串行连接
+// Serial connection to GPS device
 HardwareSerial ss(2);
 
-// NTPServer 实例
+// NTPServer instance
 WiFiNTPServer ntpServer("GPS", L_NTP_STRAT_PRIMARY);
 
-// 存储时间信息的变量
+// Variable to store time information
 bool ppsFlag = false;
 unsigned long lastPPSTime = 0;
 
 void IRAM_ATTR ppsInterrupt() {
-  // PPS 信号检测，设置 PPS 信号标志
+  // PPS signal detection, set PPS signal flag
   ppsFlag = true;
 }
 
@@ -34,38 +36,56 @@ void setup() {
   ss.begin(9600, SERIAL_8N1, 16, 17, false);  // GPS 9600 / RX 16 / TX 17
   pinMode(13, INPUT);  // PPS13
   attachInterrupt(digitalPinToInterrupt(13), ppsInterrupt, RISING);
-  lastPPSTime = millis();  // 初始化时将 lastPPSTime 设置为当前时间
+  lastPPSTime = (esp_timer_get_time() / 1000);  // Set lastPPSTime to the current time during initialization
 
-  WiFi.disconnect();    // 断开WiFi连接
-  WiFi.mode(WIFI_STA);  // 客户端模式
+  WiFi.disconnect();    // Disconnect WiFi connection
+  WiFi.mode(WIFI_STA);  // Client mode
   WiFi.config(local_IP, gateway, subnet, primaryDNS);
   WiFi.setHostname("ESP_32");
   WiFi.begin("ssid", "password");
 
-  ntpServer.begin();  // 初始化 NTPServer
+  ntpServer.begin();  // Initialize NTPServer
 }
 
 void loop() {
-  // 读取数据并传递给TinyGPSPlus库进行解码
+  // Read GPS NMEA data and pass it to TinyGPSPlus library for decoding
   while (ss.available()) {
     char c = ss.read();
     gps.encode(c);
   }
 
-  // 如果收到 PPS 信号，且距离上次 PPS 信号的时间小于 1500 毫秒，更新时间
-  if (ppsFlag && (millis() - lastPPSTime < 1500)) {
-    // 更新 NTPServer 参考时间
+  // If a PPS signal is received and the time since the last PPS signal is less than 1500 milliseconds, update the time
+  if (ppsFlag && ((esp_timer_get_time() / 1000) - lastPPSTime < 1500)) {
+    // Update NTPServer reference time
     struct tm newTime;
-    newTime.tm_year = gps.date.year() - 1900;  // struct tm 需要 年份 从 1900 开始的偏移量
-    newTime.tm_mon = gps.date.month() - 1;     // struct tm 需要 月份 从 0 开始的偏移量
+    newTime.tm_year = gps.date.year() - 1900;  // struct tm requires year offset from 1900
+    newTime.tm_mon = gps.date.month() - 1;     // struct tm requires month offset from 0
     newTime.tm_mday = gps.date.day();
     newTime.tm_hour = gps.time.hour();
     newTime.tm_min = gps.time.minute();
     newTime.tm_sec = gps.time.second();
-    ntpServer.setReferenceTime(newTime, millis());
+    ntpServer.setReferenceTime(newTime, (esp_timer_get_time() / 1000));
 
-    ppsFlag = false;         // 重置 PPS 信号标志
-    lastPPSTime = millis();  // 更新时间戳
+    /*
+    time_t t = mktime(&newTime);  // Convert struct tm to time_t
+    setTime(t);                   // Update system time
+    Serial.print("UTC date: ");
+    Serial.print(year());
+    Serial.print("/");
+    Serial.print(month());
+    Serial.print("/");
+    Serial.print(day());
+    Serial.print("    ");
+    Serial.print("UTC time: ");
+    Serial.print(hour());
+    Serial.print(":");
+    Serial.print(minute());
+    Serial.print(":");
+    Serial.println(second());
+    */
+
+    ppsFlag = false;         // Reset PPS signal flag
+    lastPPSTime = millis();  // Update timestamp
   }
-  ntpServer.update();  // 响应 NTP 访问
+  ntpServer.update();  // Respond to NTP access
 }
