@@ -34,18 +34,18 @@ Lastly, the server will need to know the current time, which brings us to:
 
 ## Setting Server Time
 
-#### void setReferenceTime(struct tm refTime, t_ntpSysClock refTimeMillis)
+#### void setReferenceTime(struct tm refTime, t_ntpSysClock refTimeMicros);
 
 This method sets the reference time from an external source. The two parameters involved are as follows:
 
 1. `refTime`: The reference time (i.e. the time as parsed from the GPS receiver)
-2. `refTimeMillis`: The processor time (i.e. a snapshot of `millis()`) that the reference time was taken at.
+2. `refTimeMicros`: The processor time (i.e. a snapshot of `esp_timer_get_time()`) that the reference time was taken at.
 
-The more often the reference time is set from an external source, the more accurate the server will be. In the case of a GPS time server, you should capture `refTimeMillis` at the rising edge of the PPS signal, then call `setReferenceTime` once the serial time data has been decoded.
+The more often the reference time is set from an external source, the more accurate the server will be. In the case of a GPS time server, you should capture `refTimeMicros` at the rising edge of the PPS signal, then call `setReferenceTime` once the serial time data has been decoded.
 
 #### void setReferenceTime(struct tm refTime)
 
-Sets the reference time, taking the current value of millis() for convenience (note: this method is not as accurate).
+Sets the reference time, taking the current value of esp_timer_get_time() for convenience (note: this method is not as accurate).
 
 # NTP Configuration
 
