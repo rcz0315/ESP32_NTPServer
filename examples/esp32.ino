@@ -3,15 +3,16 @@
 #include <WiFi.h>
 #include <esp_timer.h>
 
+// Uncomment and monitor the system time output on the serial port
 //#include <TimeLib.h>
 
 #include "WiFiNTPServer.h"  // Introduce NTPServer library
 
 // Set static IP information
 IPAddress local_IP(*************);
-IPAddress gateway((*************););
-IPAddress subnet((*************););
-IPAddress primaryDNS((*************););
+IPAddress gateway(*************);
+IPAddress subnet(*************);
+IPAddress primaryDNS(*************);
 
 // TinyGPSPlus instance
 TinyGPSPlus gps;
@@ -66,6 +67,10 @@ void loop() {
     newTime.tm_sec = gps.time.second();
     ntpServer.setReferenceTime(newTime, (esp_timer_get_time() / 1000));
 
+    // Uncomment and monitor the GPS output on the serial port
+    //Serial.print(c());
+    
+    // Uncomment and monitor the system time output on the serial port
     /*
     time_t t = mktime(&newTime);  // Convert struct tm to time_t
     setTime(t);                   // Update system time
