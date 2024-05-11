@@ -1,0 +1,71 @@
+#include <TinyGPSPlus.h>
+#include <HardwareSerial.h>
+#include <WiFi.h>
+#include <esp_timer.h>
+
+#include "WiFiNTPServer.h"  // 引入 NTPServer 库
+
+// 设置静态IP信息
+IPAddress local_IP(*************);
+IPAddress gateway((*************););
+IPAddress subnet((*************););
+IPAddress primaryDNS((*************););
+
+// TinyGPSPlus 实例
+TinyGPSPlus gps;
+
+// 与 GPS 设备的串行连接
+HardwareSerial ss(2);
+
+// NTPServer 实例
+WiFiNTPServer ntpServer("GPS", L_NTP_STRAT_PRIMARY);
+
+// 存储时间信息的变量
+bool ppsFlag = false;
+unsigned long lastPPSTime = 0;
+
+void IRAM_ATTR ppsInterrupt() {
+  // PPS 信号检测，设置 PPS 信号标志
+  ppsFlag = true;
+}
+
+void setup() {
+  Serial.begin(9600);
+  ss.begin(9600, SERIAL_8N1, 16, 17, false);  // GPS 9600 / RX 16 / TX 17
+  pinMode(13, INPUT);  // PPS13
+  attachInterrupt(digitalPinToInterrupt(13), ppsInterrupt, RISING);
+  lastPPSTime = millis();  // 初始化时将 lastPPSTime 设置为当前时间
+
+  WiFi.disconnect();    // 断开WiFi连接
+  WiFi.mode(WIFI_STA);  // 客户端模式
+  WiFi.config(local_IP, gateway, subnet, primaryDNS);
+  WiFi.setHostname("ESP_32");
+  WiFi.begin("ssid", "password");
+
+  ntpServer.begin();  // 初始化 NTPServer
+}
+
+void loop() {
+  // 读取数据并传递给TinyGPSPlus库进行解码
+  while (ss.available()) {
+    char c = ss.read();
+    gps.encode(c);
+  }
+
+  // 如果收到 PPS 信号，且距离上次 PPS 信号的时间小于 1500 毫秒，更新时间
+  if (ppsFlag && (millis() - lastPPSTime < 1500)) {
+    // 更新 NTPServer 参考时间
+    struct tm newTime;
+    newTime.tm_year = gps.date.year() - 1900;  // struct tm 需要 年份 从 1900 开始的偏移量
+    newTime.tm_mon = gps.date.month() - 1;     // struct tm 需要 月份 从 0 开始的偏移量
+    newTime.tm_mday = gps.date.day();
+    newTime.tm_hour = gps.time.hour();
+    newTime.tm_min = gps.time.minute();
+    newTime.tm_sec = gps.time.second();
+    ntpServer.setReferenceTime(newTime, millis());
+
+    ppsFlag = false;         // 重置 PPS 信号标志
+    lastPPSTime = millis();  // 更新时间戳
+  }
+  ntpServer.update();  // 响应 NTP 访问
+}
