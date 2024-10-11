@@ -1,7 +1,9 @@
 # NTPServer
 An Arduino-targetted NTP Server class that supports both basic NTP requests, and a limited subset of control requests. I built this library to also serve up timezone information via NTP management requests.
 
-Please note that the hardware used in this document is: NodeMCU-32S, ATGM336H-5N.
+Please note that the hardware used in this document is: NodeMCU-32S, ATGM336H-5N. 
+
+As of August 18, 2024, the 3.x development board package still has library compatibility issues and needs to wait for the library to be upgraded to be compatible with esp32 3.x .
 
 ## Quick Start
 
