@@ -83,18 +83,19 @@ const char* index_html = R"rawliteral(
 
 <body>
     <div class="container">
-        <h1>ESP32 Status</h1>
+        <h1>ESP32 GPS Status</h1>
+        <p style="margin-block-start: -1.5em;font-family: monospace;font-size:15px;text-align:center;">V <span id="versionString"></span></p>
         <div class="refresh-checkbox">
             <label>
                 <input type="checkbox" id="autoRefresh"> Auto-refresh every 1 seconds
             </label>
         </div>
         <div class="time">
-            <h2>UTC Date Time</h2>
+            <h2>Date Time</h2>
             <pre id="timeString">Loading time...</pre>
         </div>
         <div class="nmea">
-            <h2>GPS NMEA Data</h2>
+            <h2>NMEA Data</h2>
             <pre id="nmeaData">Loading GPS data...</pre>
         </div>
         <div class="file-upload">
@@ -119,6 +120,7 @@ const char* index_html = R"rawliteral(
            fetch('/data')
             .then(response => response.json())
             .then(data => {
+        document.getElementById('versionString').textContent = data.versionString;
         document.getElementById('timeString').textContent = data.timeString;
         document.getElementById('nmeaData').textContent = data.nmeaData;
             })
