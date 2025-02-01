@@ -16,7 +16,9 @@ String versionString = "********";
 #include "WiFiNTPServer.h"  // Introduce NTPServer library
 #include "html.h"           // Include the HTML header
 
-// Set static IP information
+// Set Wi-Fi information
+const char* ssid = "********";
+const char* password = "********";
 IPAddress local_IP(********);
 IPAddress gateway(********);
 IPAddress subnet(********);
@@ -118,7 +120,7 @@ void setup() {
   WiFi.mode(WIFI_STA);  // Client mode
   WiFi.config(local_IP, gateway, subnet, primaryDNS);
   WiFi.setHostname("ESP_32");
-  WiFi.begin("ssid", "password");
+  WiFi.begin(ssid, password);
   
   xTaskCreatePinnedToCore(
     gpsTask,    // Task function
