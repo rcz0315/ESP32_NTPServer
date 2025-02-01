@@ -1,5 +1,4 @@
 #include <WiFi.h>
-#include <TimeLib.h>
 #include <HardwareSerial.h>
 #include <esp_timer.h>
 #include <TinyGPSPlus.h>
@@ -9,6 +8,9 @@
 #include <SPIFFS.h>
 #include <AsyncTCP.h>
 #include <ArduinoOTA.h>
+
+// Uncomment and monitor the system time output on the serial port
+// #include <TimeLib.h>
 
 // Current version
 String versionString = "********";
@@ -31,6 +33,7 @@ TinyGPSPlus gps;
 HardwareSerial ss(2);
 
 struct tm newTime;
+struct timeval tv;
 
 // NTPServer instance
 WiFiNTPServer ntpServer("GPS", L_NTP_STRAT_PRIMARY);
@@ -77,9 +80,13 @@ void gpsTask(void *parameter) {
       newTime.tm_min = gps.time.minute();
       newTime.tm_sec = gps.time.second();
       ntpServer.setReferenceTime(newTime, esp_timer_get_time());
-      time_t t = mktime(&newTime);  // Convert struct tm to time_t
-      setTime(t);                   // Update system time
-
+      
+      // Update internal RTC time, which will be lost after reboot or power failure
+      time_t t = mktime(&newTime);
+      tv.tv_sec = t;
+      tv.tv_usec = esp_timer_get_time() - lastPPSTime;
+      settimeofday(&tv, NULL);
+      
       // Uncomment and monitor the GPS output on the serial port
       //Serial.print(c);
 
@@ -104,8 +111,7 @@ void gpsTask(void *parameter) {
       lastPPSTime = esp_timer_get_time();  // Update timestamp
     }
 
-    // Delay to prevent tasks from taking up too much CPU time
-    // Only gpsTask, this item is meaningless
+    // Delay to prevent tasks from taking up too much CPU time. Only gpsTask, this item is meaningless
     // vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
