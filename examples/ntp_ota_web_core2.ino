@@ -46,7 +46,7 @@ bool ppsFlag = false;
 int64_t lastPPSTime = 0;
 
 // Buffer to store GPS NMEA sentences
-String nmeaSentences[20];
+String nmeaSentences[25];
 int nmeaIndex = 0;
 
 // Variables to store status information
@@ -66,7 +66,7 @@ void gpsTask(void *parameter) {
       gps.encode(c);
       if (c == '\n') {
         nmeaSentences[nmeaIndex] = ss.readStringUntil('\n');
-        nmeaIndex = (nmeaIndex + 1) % 20;
+        nmeaIndex = (nmeaIndex + 1) % 25;
       }
     }
 
@@ -192,7 +192,7 @@ void setup() {
     String timeString = String(gps.date.year()) + "/" + String(gps.date.month()) + "/" + String(gps.date.day()) + " " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second());
 
     String nmeaData = "";
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 25; i++) {
       nmeaData += nmeaSentences[i] + "\n";
     }
 
