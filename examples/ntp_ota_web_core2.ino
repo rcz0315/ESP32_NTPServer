@@ -13,9 +13,6 @@
 // Current version
 String versionString = "********";
 
-// Defining tasks
-TaskHandle_t gpsTaskHandle;
-
 #include "WiFiNTPServer.h"  // Introduce NTPServer library
 #include "html.h"           // Include the HTML header
 
@@ -105,8 +102,9 @@ void gpsTask(void *parameter) {
       lastPPSTime = esp_timer_get_time();  // Update timestamp
     }
 
-    // 延时以防止任务占用过多 CPU 时间
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    // Delay to prevent tasks from taking up too much CPU time
+    // Only gpsTask, this item is meaningless
+    // vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
 
@@ -123,13 +121,13 @@ void setup() {
   WiFi.begin("ssid", "password");
   
   xTaskCreatePinnedToCore(
-    gpsTask,         // 任务函数
-    "gpsTask",       // 任务名称
-    4096,            // 任务堆栈大小
-    NULL,            // 任务参数
-    1,               // 任务优先级
-    &gpsTaskHandle,  // 任务句柄
-    1                // 指定运行在 Core 1
+    gpsTask,    // Task function
+    "gpsTask",  // Task name
+    4096,       // Task stack size
+    NULL,       // Task parameters
+    1,          // Task priority
+    NULL,       // Task handle
+    1           // Specify running on Core 1
   );
 
   ntpServer.begin();  // Initialize NTPServer
