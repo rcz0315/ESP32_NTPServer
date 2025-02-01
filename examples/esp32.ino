@@ -6,11 +6,13 @@
 
 #include "WiFiNTPServer.h"  // Introduce NTPServer library
 
-// Set static IP information
-IPAddress local_IP(*************);
-IPAddress gateway(*************);
-IPAddress subnet(*************);
-IPAddress primaryDNS(*************);
+// Set Wi-Fi information
+const char* ssid = "********";
+const char* password = "********";
+IPAddress local_IP(********);
+IPAddress gateway(********);
+IPAddress subnet(********);
+IPAddress primaryDNS(********);
 
 // TinyGPSPlus instance
 TinyGPSPlus gps;
@@ -41,7 +43,7 @@ void setup() {
   WiFi.mode(WIFI_STA);  // Client mode
   WiFi.config(local_IP, gateway, subnet, primaryDNS);
   WiFi.setHostname("ESP_32");
-  WiFi.begin("ssid", "password");
+  WiFi.begin(ssid, password);
 
   ntpServer.begin();  // Initialize NTPServer
 }
