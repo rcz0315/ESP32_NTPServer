@@ -10,6 +10,9 @@
 #include <AsyncTCP.h>
 #include <ArduinoOTA.h>
 
+// Current version
+String versionString = "********";
+
 #include "WiFiNTPServer.h"  // Introduce NTPServer library
 #include "html.h"           // Include the HTML header
 
@@ -122,6 +125,7 @@ void setup() {
 
     // Create a JSON object
     StaticJsonDocument<512> jsonDoc;
+    jsonDoc["versionString"] = versionString;
     jsonDoc["timeString"] = timeString;
     jsonDoc["nmeaData"] = nmeaData;
 
