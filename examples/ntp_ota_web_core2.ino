@@ -77,7 +77,7 @@ void gpsTask(void *parameter) {
       newTime.tm_min = gps.time.minute();
       newTime.tm_sec = gps.time.second();
       ntpServer.setReferenceTime(newTime, esp_timer_get_time());
-      time_t t = mktime(&newTime);  // Convert struct tm to time_t
+      time_t t = timegm(&newTime);  // Convert struct tm to time_t
       setTime(t);                   // Update system time
 
       // Uncomment and monitor the GPS output on the serial port
