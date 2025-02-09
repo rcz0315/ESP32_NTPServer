@@ -198,7 +198,7 @@ void loop() {
     newTime.tm_hour = gps.time.hour();
     newTime.tm_min = gps.time.minute();
     newTime.tm_sec = gps.time.second();
-    ntpServer.setReferenceTime(newTime, (esp_timer_get_time() / 1000));
+    ntpServer.setReferenceTime(newTime, esp_timer_get_time());
     
     // Update internal RTC time, which will be lost after reboot or power failure
     time_t t = mktime(&newTime);
