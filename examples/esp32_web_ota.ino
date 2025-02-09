@@ -1,12 +1,12 @@
 #include <WiFi.h>
 #include <HardwareSerial.h>
-#include <esp_timer.h>
+#include <TimeLib.h>
 #include <TinyGPSPlus.h>
-
-#include <ESPAsyncWebServer.h>
-#include <ArduinoJson.h>
 #include <SPIFFS.h>
-#include <AsyncTCP.h>
+
+#include <ArduinoJson.h>
+#include <AsyncTCP.h>           //by ESP32Async
+#include <ESPAsyncWebServer.h>  //by ESP32Async
 #include <ArduinoOTA.h>
 
 // Current version
@@ -29,9 +29,6 @@ TinyGPSPlus gps;
 // Serial connection to GPS device
 HardwareSerial ss(2);
 
-struct tm newTime;
-struct timeval tv;
-
 // NTPServer instance
 WiFiNTPServer ntpServer("GPS", L_NTP_STRAT_PRIMARY);
 
@@ -39,11 +36,13 @@ WiFiNTPServer ntpServer("GPS", L_NTP_STRAT_PRIMARY);
 AsyncWebServer server(80);
 
 // Variable to store time information
+struct tm newTime;
+struct timeval tv;
 bool ppsFlag = false;
-unsigned long lastPPSTime = 0;
+int64_t lastPPSTime = 0;
 
 // Buffer to store GPS NMEA sentences
-String nmeaSentences[20];
+String nmeaSentences[25];
 int nmeaIndex = 0;
 
 // Variables to store status information
@@ -59,7 +58,7 @@ void setup() {
   ss.begin(9600, SERIAL_8N1, 16, 17, false);  // GPS 9600 / RX 16 / TX 17
   pinMode(13, INPUT);                         // PPS13
   attachInterrupt(digitalPinToInterrupt(13), ppsInterrupt, RISING);
-  lastPPSTime = (esp_timer_get_time() / 1000);  // Set lastPPSTime to the current time during initialization
+  lastPPSTime = esp_timer_get_time();  // Set lastPPSTime to the current time during initialization
 
   WiFi.disconnect();    // Disconnect WiFi connection
   WiFi.mode(WIFI_STA);  // Client mode
@@ -105,6 +104,7 @@ void setup() {
       deviceStatus += "End Failed";
     }
   });
+  ArduinoOTA.setMdnsEnabled(false);
   ArduinoOTA.begin();
 
   // Serve the index.html
@@ -112,16 +112,12 @@ void setup() {
     request->send(200, "text/html", index_html);
   });
 
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "image/x-icon", "");
-  });
-
   // Handle /data endpoint
   server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
     String timeString = String(gps.date.year()) + "/" + String(gps.date.month()) + "/" + String(gps.date.day()) + " " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second());
 
     String nmeaData = "";
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 25; i++) {
       nmeaData += nmeaSentences[i] + "\n";
     }
 
@@ -189,12 +185,12 @@ void loop() {
     
     if (c == '\n') {
       nmeaSentences[nmeaIndex] = ss.readStringUntil('\n');
-      nmeaIndex = (nmeaIndex + 1) % 20;
+      nmeaIndex = (nmeaIndex + 1) % 25;
     }
   }
 
   // If a PPS signal is received and the time since the last PPS signal is less than 1500 milliseconds, update the time
-  if (ppsFlag && ((esp_timer_get_time() / 1000) - lastPPSTime < 1500)) {
+  if (ppsFlag && (esp_timer_get_time() - lastPPSTime < 1500)) {
     // Update NTPServer reference time
     newTime.tm_year = gps.date.year() - 1900;  // struct tm requires year offset from 1900
     newTime.tm_mon = gps.date.month() - 1;     // struct tm requires month offset from 0
@@ -210,8 +206,8 @@ void loop() {
     tv.tv_usec = esp_timer_get_time() - lastPPSTime;
     settimeofday(&tv, NULL);
 
-    ppsFlag = false;         // Reset PPS signal flag
-    lastPPSTime = millis();  // Update timestamp
+    ppsFlag = false;                     // Reset PPS signal flag
+    lastPPSTime = esp_timer_get_time();  // Update timestamp
   }
   ntpServer.update();  // Respond to NTP access
   ArduinoOTA.handle();
