@@ -49,7 +49,7 @@ The more often the reference time is set from an external source, the more accur
 
 #### void setReferenceTime(struct tm refTime)
 
-Sets the reference time, taking the current value of esp_timer_get_time() for convenience.
+Sets the reference time, taking the current value of `esp_timer_get_time()` for convenience.
 
 # NTP Configuration
 
