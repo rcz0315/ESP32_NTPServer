@@ -5,8 +5,6 @@ Please note that the hardware used in this document is: NodeMCU-32S, ATGM336H-5N
 
 Although ATGM336H-5N can be powered by 5V, it is found that the GPS clock is about 6s slower than time.gov when using 5V, and it is reduced to less than 1s when using 3.3V power supply.
 
-As of August 18, 2024, the 3.x development board package still has library compatibility issues and needs to wait for the library to be upgraded to be compatible with esp32 3.x .
-
 ## Quick Start
 
 To initialize the NTP Server, you need to know what stratum and time reference you are using. In my case, I was obtaining my time source from a GPS receiver. This puts me in stratum 1 as a GPS reference:
