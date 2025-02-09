@@ -1,11 +1,11 @@
 # NTPServer
 An Arduino-targetted NTP Server class that supports both basic NTP requests, and a limited subset of control requests. I built this library to also serve up timezone information via NTP management requests.
 
-Please note that the hardware used in this document is: NodeMCU-32S, ATGM336H-5N. 
+Please note that the hardware used in this document is: `NodeMCU-32S`, `ATGM336H-5N`. 
 
-Although ATGM336H-5N can be powered by 5V, it is found that the GPS clock is about 6s slower than time.gov when using 5V, and it is reduced to less than 1s when using 3.3V power supply.
+Although `ATGM336H-5N` can be powered by 5V, it is found that the GPS clock is about 6s slower than time.gov when using 5V, and it is reduced to less than 1s when using `3.3V` power supply.
 
-Compatible with Arduino ESP32 version 3.x
+Compatible with Arduino ESP32 version `3.x`
 
 ## Quick Start
 
