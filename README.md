@@ -5,7 +5,7 @@ Please note that the hardware used in this document is: NodeMCU-32S, ATGM336H-5N
 
 Although ATGM336H-5N can be powered by 5V, it is found that the GPS clock is about 6s slower than time.gov when using 5V, and it is reduced to less than 1s when using 3.3V power supply.
 
-Compatible with esp32 3.x
+Compatible with Arduino ESP32 version 3.x
 
 ## Quick Start
 
