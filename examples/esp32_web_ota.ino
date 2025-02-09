@@ -122,7 +122,7 @@ void setup() {
     }
 
     // Create a JSON object
-    StaticJsonDocument<512> jsonDoc;
+    JsonDocument jsonDoc;
     jsonDoc["versionString"] = versionString;
     jsonDoc["timeString"] = timeString;
     jsonDoc["nmeaData"] = nmeaData;
