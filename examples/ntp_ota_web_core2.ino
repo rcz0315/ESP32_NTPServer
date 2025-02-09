@@ -1,12 +1,12 @@
 #include <WiFi.h>
 #include <HardwareSerial.h>
-#include <esp_timer.h>
+#include <TimeLib.h>
 #include <TinyGPSPlus.h>
-
-#include <ESPAsyncWebServer.h>
-#include <ArduinoJson.h>
 #include <SPIFFS.h>
-#include <AsyncTCP.h>
+
+#include <ArduinoJson.h>
+#include <AsyncTCP.h>           //by ESP32Async
+#include <ESPAsyncWebServer.h>  //by ESP32Async
 #include <ArduinoOTA.h>
 
 // Current version
@@ -29,9 +29,6 @@ TinyGPSPlus gps;
 // Serial connection to GPS device
 HardwareSerial ss(2);
 
-struct tm newTime;
-struct timeval tv;
-
 // NTPServer instance
 WiFiNTPServer ntpServer("GPS", L_NTP_STRAT_PRIMARY);
 
@@ -39,6 +36,8 @@ WiFiNTPServer ntpServer("GPS", L_NTP_STRAT_PRIMARY);
 AsyncWebServer server(80);
 
 // Variable to store time information
+struct tm newTime;
+struct timeval tv;
 bool ppsFlag = false;
 int64_t lastPPSTime = 0;
 
@@ -46,7 +45,7 @@ int64_t lastPPSTime = 0;
 String nmeaSentences[25];
 int nmeaIndex = 0;
 
-// Variables to store status information
+// OTA status information
 String deviceStatus = "Initializing";
 
 void IRAM_ATTR ppsInterrupt() {
@@ -83,8 +82,7 @@ void gpsTask(void *parameter) {
       ntpServer.setReferenceTime(newTime, esp_timer_get_time());
       
       // Update internal RTC time, which will be lost after reboot or power failure
-      time_t t = mktime(&newTime);
-      tv.tv_sec = t;
+      tv.tv_sec = mktime(&newTime);
       tv.tv_usec = esp_timer_get_time() - lastPPSTime;
       settimeofday(&tv, NULL);
       
@@ -92,8 +90,8 @@ void gpsTask(void *parameter) {
       lastPPSTime = esp_timer_get_time();  // Update timestamp
     }
 
-    // Delay to prevent tasks from taking up too much CPU time. Only gpsTask, this item is meaningless
-    // vTaskDelay(10 / portTICK_PERIOD_MS);
+    // Delay to prevent tasks from taking up too much CPU time
+    vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
 
@@ -157,15 +155,12 @@ void setup() {
       deviceStatus += "End Failed";
     }
   });
+  ArduinoOTA.setMdnsEnabled(false);
   ArduinoOTA.begin();
 
   // Serve the index.html
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/html", index_html);
-  });
-
-  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "image/x-icon", "");
   });
 
   // Handle /data endpoint
