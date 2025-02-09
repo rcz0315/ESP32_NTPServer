@@ -1,8 +1,8 @@
+#include <WiFi.h>
+#include <HardwareSerial.h>
 #include <TimeLib.h>
 #include <TinyGPSPlus.h>
-#include <HardwareSerial.h>
-#include <WiFi.h>
-#include <esp_timer.h>
+#include <SPIFFS.h>
 
 #include "WiFiNTPServer.h"  // Introduce NTPServer library
 
@@ -24,11 +24,14 @@ HardwareSerial ss(2);
 WiFiNTPServer ntpServer("GPS", L_NTP_STRAT_PRIMARY);
 
 // Variable to store time information
+struct tm newTime;
+struct timeval tv;
 bool ppsFlag = false;
 unsigned long lastPPSTime = 0;
 
 void IRAM_ATTR ppsInterrupt() {
   // PPS signal detection, set PPS signal flag
+  lastPPSTime = esp_timer_get_time();  // Set lastPPSTime to the current time during initialization
   ppsFlag = true;
 }
 
@@ -37,7 +40,7 @@ void setup() {
   ss.begin(9600, SERIAL_8N1, 16, 17, false);  // GPS 9600 / RX 16 / TX 17
   pinMode(13, INPUT);  // PPS13
   attachInterrupt(digitalPinToInterrupt(13), ppsInterrupt, RISING);
-  lastPPSTime = (esp_timer_get_time() / 1000);  // Set lastPPSTime to the current time during initialization
+  lastPPSTime = esp_timer_get_time();  // Set lastPPSTime to the current time during initialization
 
   WiFi.disconnect();    // Disconnect WiFi connection
   WiFi.mode(WIFI_STA);  // Client mode
@@ -46,6 +49,12 @@ void setup() {
   WiFi.begin(ssid, password);
 
   ntpServer.begin();  // Initialize NTPServer
+
+  // Initialize SPIFFS
+  if (!SPIFFS.begin(true)) {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+  }
 }
 
 void loop() {
@@ -53,10 +62,13 @@ void loop() {
   while (ss.available()) {
     char c = ss.read();
     gps.encode(c);
+
+    // Uncomment and monitor the GPS output on the serial port
+    //Serial.print(c);
   }
 
   // If a PPS signal is received and the time since the last PPS signal is less than 1500 milliseconds, update the time
-  if (ppsFlag && ((esp_timer_get_time() / 1000) - lastPPSTime < 1500)) {
+  if (ppsFlag && (esp_timer_get_time() - lastPPSTime < 1500)) {
     // Update NTPServer reference time
     struct tm newTime;
     newTime.tm_year = gps.date.year() - 1900;  // struct tm requires year offset from 1900
@@ -65,32 +77,16 @@ void loop() {
     newTime.tm_hour = gps.time.hour();
     newTime.tm_min = gps.time.minute();
     newTime.tm_sec = gps.time.second();
-    ntpServer.setReferenceTime(newTime, (esp_timer_get_time() / 1000));
-    time_t t = mktime(&newTime);  // Convert struct tm to time_t
-    setTime(t);                   // Update system time
+    ntpServer.setReferenceTime(newTime, esp_timer_get_time());
     
-    // Uncomment and monitor the GPS output on the serial port
-    //Serial.print(c);
-    
-    // Uncomment and monitor the system time output on the serial port
-    /*
-    Serial.print("UTC date: ");
-    Serial.print(year());
-    Serial.print("/");
-    Serial.print(month());
-    Serial.print("/");
-    Serial.print(day());
-    Serial.print("    ");
-    Serial.print("UTC time: ");
-    Serial.print(hour());
-    Serial.print(":");
-    Serial.print(minute());
-    Serial.print(":");
-    Serial.println(second());
-    */
+    // Update internal RTC time, which will be lost after reboot or power failure
+    time_t t = mktime(&newTime);
+    tv.tv_sec = t;
+    tv.tv_usec = esp_timer_get_time() - lastPPSTime;
+    settimeofday(&tv, NULL);
 
-    ppsFlag = false;         // Reset PPS signal flag
-    lastPPSTime = millis();  // Update timestamp
+    ppsFlag = false;                     // Reset PPS signal flag
+    lastPPSTime = esp_timer_get_time();  // Update timestamp
   }
   ntpServer.update();  // Respond to NTP access
 }
