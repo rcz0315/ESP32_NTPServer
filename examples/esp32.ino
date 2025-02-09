@@ -49,12 +49,6 @@ void setup() {
   WiFi.begin(ssid, password);
 
   ntpServer.begin();  // Initialize NTPServer
-
-  // Initialize SPIFFS
-  if (!SPIFFS.begin(true)) {
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
-  }
 }
 
 void loop() {
