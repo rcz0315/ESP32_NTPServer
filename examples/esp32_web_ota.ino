@@ -9,9 +9,6 @@
 #include <AsyncTCP.h>
 #include <ArduinoOTA.h>
 
-// Uncomment and monitor the system time output on the serial port
-// #include <TimeLib.h>
-
 // Current version
 String versionString = "********";
 
@@ -186,6 +183,10 @@ void loop() {
   while (ss.available()) {
     char c = ss.read();
     gps.encode(c);
+    
+    // Uncomment and monitor the GPS output on the serial port
+    //Serial.print(c);
+    
     if (c == '\n') {
       nmeaSentences[nmeaIndex] = ss.readStringUntil('\n');
       nmeaIndex = (nmeaIndex + 1) % 20;
@@ -208,26 +209,6 @@ void loop() {
     tv.tv_sec = t;
     tv.tv_usec = esp_timer_get_time() - lastPPSTime;
     settimeofday(&tv, NULL);
-
-    // Uncomment and monitor the GPS output on the serial port
-    //Serial.print(c);
-
-    // Uncomment and monitor the system time output on the serial port
-    /*
-    Serial.print("UTC date: ");
-    Serial.print(year());
-    Serial.print("/");
-    Serial.print(month());
-    Serial.print("/");
-    Serial.print(day());
-    Serial.print("    ");
-    Serial.print("UTC time: ");
-    Serial.print(hour());
-    Serial.print(":");
-    Serial.print(minute());
-    Serial.print(":");
-    Serial.println(second());
-    */
 
     ppsFlag = false;         // Reset PPS signal flag
     lastPPSTime = millis();  // Update timestamp
