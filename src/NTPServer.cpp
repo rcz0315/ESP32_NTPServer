@@ -326,10 +326,10 @@ int NTPServer::_send(int cbPacketSize) {
 int NTPServer::_close(int reason) {
   if (_udp->available() > 0) {
     _recv(_udp->available());
-    return 0;
   }
 
   _requestsFailed++;
+  return 0;
 }
 
 /***** setter methods ******/
