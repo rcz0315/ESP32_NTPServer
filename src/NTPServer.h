@@ -162,7 +162,7 @@ protected:
   char _referenceId[4];
 
   /* Clock Synch Items */
-  t_ntpSysClock _lastTimeSyncMillis;
+  t_ntpSysClock _lastTimeSyncMicros;
   t_ntpSysClock _referenceTimeMicros;
   struct tm _referenceTime;
   time_t _referenceTimeAsSeconds;
