@@ -75,7 +75,7 @@
 
 /* Type Aliases */
 typedef uint64_t t_ntpTimestamp; /* Type for 64-bit NTP timestamps */
-typedef uint64_t t_ntpSysClock;  /* Type for native system clock (esp_timer_get_time calls(微秒)) */
+typedef uint64_t t_ntpSysClock;  /* Type for native system clock (esp_timer_get_time calls Microseconds) */
 
 
 /* NTP Structure Definitions */
