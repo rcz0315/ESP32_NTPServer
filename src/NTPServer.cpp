@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <udp.h>
+#include <WiFiUdp.h>
 #include <arpa/inet.h>  // 或者 #include <netinet/in.h>
 #include <math.h>
 #include <time.h>
@@ -12,7 +12,7 @@ NTPServer::NTPServer() {
   _packetBufferPtr = 0;
   _clockIsSynchronized = 0;
   _clockSynchronizedSinceBoot = 0;
-  _lastTimeSyncMillis = 0;
+  _lastTimeSyncMicros = 0;
   _requestsSucceeded = 0;
   _requestsFailed = 0;
   _stratum = L_NTP_STRAT_UNSPECIFIED;
@@ -54,7 +54,7 @@ void NTPServer::update() {
   static struct timeval tvReceived;
 
   // de-sync as needed
-  if ((esp_timer_get_time() / 1000) - _referenceTimeMicros > _maxTimeBetweenUpdates)
+  if (esp_timer_get_time() - _referenceTimeMicros > _maxTimeBetweenUpdates)
     _clockIsSynchronized = 0;
 
   if (_recv(sizeof(S_NTP_HEADER))) {
@@ -119,24 +119,16 @@ void NTPServer::_timestamp(struct timeval *tv) {
   static t_ntpTimestamp delta;
 
   if (_clockSynchronizedSinceBoot) {
-    delta = (esp_timer_get_time() / 1000) - _referenceTimeMicros;
 
-    tv->tv_sec = _referenceTimeAsSeconds;
+    // Get the elapsed time in microseconds
+    delta = esp_timer_get_time() - _referenceTimeMicros;
 
-    while (delta >= 100000000) {
-      delta -= 100000000;
-      tv->tv_sec += 100;
-    }
-    while (delta >= 10000000) {
-      delta -= 10000000;
-      tv->tv_sec += 10;
-    }
-    while (delta >= 1000000) {
-      delta -= 1000000;
-      tv->tv_sec++;
-    }
+    // Set seconds part of timeval
+    tv->tv_sec = _referenceTimeAsSeconds + (delta / 1000000);  // Convert microseconds to seconds
 
-    tv->tv_usec = delta;
+    // Set microseconds part of timeval
+    tv->tv_usec = delta % 1000000;  // Remaining microseconds after converting to seconds
+
   } else {
     tv->tv_sec = 0;
     tv->tv_usec = 0;
@@ -144,7 +136,7 @@ void NTPServer::_timestamp(struct timeval *tv) {
 }
 
 unsigned long NTPServer::getElapsedTimeSinceSync() {
-  return (esp_timer_get_time() / 1000) - _lastTimeSyncMillis;
+  return esp_timer_get_time() - _lastTimeSyncMicros;
 }
 
 void NTPServer::_htonTimestamp(const struct timeval tv, t_ntpTimestamp *dest) {
@@ -387,15 +379,15 @@ void NTPServer::invalidateTimeSynch() {
 }
 
 void NTPServer::setReferenceTime(struct tm refTime) {
-  setReferenceTime(refTime, (esp_timer_get_time() / 1000));
+  setReferenceTime(refTime, esp_timer_get_time());
 }
 
 void NTPServer::setReferenceTime(struct tm refTime, t_ntpSysClock refTimeMicros) {
   _referenceTime = refTime;              // Time aquired from external source
   _referenceTimeMicros = refTimeMicros;  // Timestamp at which this time was acquried (used to compute fractional seconds)
 
-  _lastTimeSyncMillis = (esp_timer_get_time() / 1000);  // Keeps track of how long it has been since the sync time was set
-  _clockIsSynchronized = 1;                             // Clock is now synchronized
+  _lastTimeSyncMicros = esp_timer_get_time();  // Keeps track of how long it has been since the sync time was set
+  _clockIsSynchronized = 1;                    // Clock is now synchronized
   _clockSynchronizedSinceBoot = 1;
 
   _referenceTimeAsSeconds = mktime(&refTime);
@@ -408,27 +400,60 @@ int NTPServer::getCurrentTime(struct tm *outTime, t_ntpSysClock *outMilliseconds
   *outTime = _referenceTime;
 
   if (_clockIsSynchronized) {
-    deltaMicros = (esp_timer_get_time() / 1000) - _referenceTimeMicros;
+    deltaMicros = esp_timer_get_time() - _referenceTimeMicros;
 
-    while (deltaMicros > 1000000) {
+    while (deltaMicros >= 1000000) {
       deltaMicros -= 1000000;
       outTime->tm_sec++;
-
-      if (outTime->tm_sec > 250) {
-        // Make sure that things don't overflow on long loss-of-synch timeframes
-        mktime(outTime);
+      // Check and handle overflow
+      // Minutes
+      if (outTime->tm_sec >= 60) {
+        outTime->tm_sec -= 60;
+        outTime->tm_min++;
+        // Hours
+        if (outTime->tm_min >= 60) {
+          outTime->tm_min -= 60;
+          outTime->tm_hour++;
+          // Days
+          if (outTime->tm_hour >= 24) {
+            outTime->tm_hour -= 24;
+            outTime->tm_mday++;
+            // Month
+            int daysInMonth = 31;  // Default is 31 days per month
+            switch (outTime->tm_mon) {
+              case 1:  // February
+                daysInMonth = (outTime->tm_year % 4 == 0 && (outTime->tm_year % 100 != 0 || outTime->tm_year % 400 == 0)) ? 29 : 28;
+                break;
+              case 3:
+              case 5:
+              case 8:
+              case 10:  // 30-day month
+                daysInMonth = 30;
+                break;
+            }
+            if (outTime->tm_mday > daysInMonth) {
+              outTime->tm_mday -= daysInMonth;
+              outTime->tm_mon++;
+              // Year
+              if (outTime->tm_mon >= 12) {
+                outTime->tm_mon -= 12;
+                outTime->tm_year++;
+              }
+            }
+          }
+        }
       }
     }
-
-    // One last call to adjust
-    mktime(outTime);
+    // Update milliseconds part
     *outMilliseconds = deltaMicros / 1000;
+
+    // Return success status
     result = L_NTP_R_SUCCESS;
   } else {
-    deltaMicros = 0;
+    // Unsynchronized status
+    *outMilliseconds = 0;
     result = L_NTP_R_NOT_SYNCHED;
   }
-
   return result;
 }
 
