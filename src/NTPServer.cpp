@@ -40,6 +40,7 @@ int NTPServer::begin(UDP &udp) {
   // This way, no matter what is employed, as long as it is derived from the UDP object we can use it.
 
   _udp = &udp;
+  return 0;
 }
 
 void NTPServer::end() {
@@ -325,6 +326,7 @@ int NTPServer::_send(int cbPacketSize) {
 int NTPServer::_close(int reason) {
   if (_udp->available() > 0) {
     _recv(_udp->available());
+    return 0;
   }
 
   _requestsFailed++;
