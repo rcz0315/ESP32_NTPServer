@@ -23,6 +23,21 @@ IPAddress gateway(********);
 IPAddress subnet(********);
 IPAddress primaryDNS(********);
 
+void WiFiEvent(WiFiEvent_t event) {
+  switch (event) {
+    case WIFI_EVENT_STA_DISCONNECTED:
+      // Serial.println("WiFi disconnected, trying to reconnect...");
+      WiFi.begin(ssid, password);  // Reconnect WiFi
+      break;
+    case IP_EVENT_STA_GOT_IP:
+      // Serial.print("WiFi connection successful, IP address: ");
+      // Serial.println(WiFi.localIP());
+      break;
+    default:
+      break;
+  }
+}
+
 // TinyGPSPlus instance
 TinyGPSPlus gps;
 
@@ -105,7 +120,12 @@ void setup() {
   WiFi.mode(WIFI_STA);  // Client mode
   WiFi.config(local_IP, gateway, subnet, primaryDNS);
   WiFi.setHostname("ESP_32");
+  
+  // Register for WiFi events
+  WiFi.onEvent(WiFiEvent);
+
   WiFi.begin(ssid, password);
+  delay(1000);  
   
   xTaskCreatePinnedToCore(
     gpsTask,    // Task function
