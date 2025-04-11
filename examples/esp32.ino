@@ -58,7 +58,7 @@ void setup() {
 }
 
 void loop() {
-  if (millis() - lastCheck >= 60000UL) {  // Check the connection status every 60 seconds
+  if (millis() - lastCheck >= 60000UL) {  // Check Wi-Fi connection status every 60 seconds
     lastCheck = millis();
 
     // Use ping to check 3 DNSs, once for each.
