@@ -22,19 +22,11 @@ IPAddress local_IP(********);
 IPAddress gateway(********);
 IPAddress subnet(********);
 IPAddress primaryDNS(********);
-
+unsigned long lastReconnectAttempt = 0;
+const unsigned long reconnectInterval = 30000;  // 30s
 void WiFiEvent(WiFiEvent_t event) {
-  switch (event) {
-    case WIFI_EVENT_STA_DISCONNECTED:
-      // Serial.println("WiFi disconnected, trying to reconnect...");
-      WiFi.begin(ssid, password);  // Reconnect WiFi
-      break;
-    case IP_EVENT_STA_GOT_IP:
-      // Serial.print("WiFi connection successful, IP address: ");
-      // Serial.println(WiFi.localIP());
-      break;
-    default:
-      break;
+  if (event == WIFI_EVENT_STA_DISCONNECTED) {
+    // Serial.println("[WiFi] Disconnected.");
   }
 }
 
@@ -120,12 +112,9 @@ void setup() {
   WiFi.mode(WIFI_STA);  // Client mode
   WiFi.config(local_IP, gateway, subnet, primaryDNS);
   WiFi.setHostname("ESP_32");
-  
-  // Register for WiFi events
-  WiFi.onEvent(WiFiEvent);
-
   WiFi.begin(ssid, password);
-  delay(1000);  
+  delay(1000);
+  WiFi.onEvent(WiFiEvent);  // Register for WiFi events
   
   xTaskCreatePinnedToCore(
     gpsTask,    // Task function
@@ -245,6 +234,16 @@ void setup() {
 }
 
 void loop() {
+  // After the WiFi connection is disconnected, reconnect every 30 seconds
+  if (WiFi.status() != WL_CONNECTED) {
+    unsigned long now = millis();
+    if (now - lastReconnectAttempt >= reconnectInterval) {
+      lastReconnectAttempt = now;
+      Serial.println("[WiFi] Trying to reconnect...");
+      WiFi.disconnect();  // To be on the safe side, clear the connection status
+      WiFi.begin(ssid, password);
+    }
+  }
   ntpServer.update();  // Respond to NTP access
   ArduinoOTA.handle();
 }
