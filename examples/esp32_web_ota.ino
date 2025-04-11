@@ -3,6 +3,7 @@
 #include <TimeLib.h>
 #include <TinyGPSPlus.h>
 #include <SPIFFS.h>
+#include <ESPping.h>
 
 #include <ArduinoJson.h>
 #include <AsyncTCP.h>           //by ESP32Async
@@ -23,14 +24,9 @@ IPAddress gateway(********);
 IPAddress subnet(********);
 IPAddress primaryDNS(********);
 
-// WiFi Event Listener
-unsigned long lastReconnectAttempt = 0;
-const unsigned long reconnectInterval = 30000;  // 30 seconds
-void WiFiEvent(WiFiEvent_t event) {
-  if (event == WIFI_EVENT_STA_DISCONNECTED) {
-    // Serial.println("[WiFi] Disconnected.");
-  }
-}
+// Wi-Fi connection status check
+unsigned long lastCheck = 0;
+int failCount = 0;
 
 // TinyGPSPlus instance
 TinyGPSPlus gps;
@@ -75,7 +71,6 @@ void setup() {
   WiFi.setHostname("ESP_32");
   WiFi.begin(ssid, password);
   delay(1000);
-  WiFi.onEvent(WiFiEvent);  // Register for WiFi events
   
   ntpServer.begin();  // Initialize NTPServer
 
@@ -186,30 +181,25 @@ void setup() {
 }
 
 void loop() {
-  // After the WiFi connection is disconnected, reconnect every 30 seconds
-  if (WiFi.status() != WL_CONNECTED) {
-    unsigned long now = millis();
-    if (now - lastReconnectAttempt >= reconnectInterval) {
-      lastReconnectAttempt = now;
-      Serial.println("[WiFi] Trying to reconnect...");
-      WiFi.disconnect();  // To be on the safe side, clear the connection status
-      WiFi.begin(ssid, password);
+  if (millis() - lastCheck >= 60000UL) {  // Check Wi-Fi connection status every 60 seconds
+    lastCheck = millis();
+
+    // Use ping to check 3 DNSs, once for each.
+    bool pingFailed =
+      !Ping.ping("192.168.1.1", 1) && !Ping.ping("114.114.115.115", 1) && !Ping.ping("8.8.8.8", 1);
+
+    // Restart ESP32 after 3 consecutive failures
+    if (pingFailed) {
+      failCount++;
+      // Serial.printf("[Ping] Failed #%d\n", failCount);
+      if (failCount >= 3) {
+        ESP.restart();
+      }
+    } else {
+      failCount = 0;
     }
   }
-  
-  // Read GPS NMEA data and pass it to TinyGPSPlus library for decoding
-  while (ss.available()) {
-    char c = ss.read();
-    gps.encode(c);
-    
-    // Uncomment and monitor the GPS output on the serial port
-    //Serial.print(c);
-    
-    if (c == '\n') {
-      nmeaSentences[nmeaIndex] = ss.readStringUntil('\n');
-      nmeaIndex = (nmeaIndex + 1) % 25;
-    }
-  }
+
 
   // If a PPS signal is received and the time since the last PPS signal is less than 1500 milliseconds, update the time
   if (ppsFlag && (esp_timer_get_time() - lastPPSTime < 1500)) {
