@@ -3,11 +3,15 @@
 #include <TimeLib.h>
 #include <TinyGPSPlus.h>
 #include <SPIFFS.h>
+#include "WiFiNTPServer.h"
+#include <ESPping.h>
 
+#include <ArduinoOTA.h>
 #include <ArduinoJson.h>
 #include <AsyncTCP.h>           //by ESP32Async
 #include <ESPAsyncWebServer.h>  //by ESP32Async
-#include <ArduinoOTA.h>
+#include "html.h"
+
 
 // Current version
 String versionString = "********";
