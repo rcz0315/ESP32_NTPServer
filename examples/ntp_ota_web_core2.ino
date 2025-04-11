@@ -3,21 +3,18 @@
 #include <TimeLib.h>
 #include <TinyGPSPlus.h>
 #include <SPIFFS.h>
-#include "WiFiNTPServer.h"
 #include <ESPping.h>
 
 #include <ArduinoOTA.h>
 #include <ArduinoJson.h>
 #include <AsyncTCP.h>           //by ESP32Async
 #include <ESPAsyncWebServer.h>  //by ESP32Async
-#include "html.h"
-
-
-// Current version
-String versionString = "********";
 
 #include "WiFiNTPServer.h"  // Introduce NTPServer library
 #include "html.h"           // Include the HTML header
+
+// Current version
+String versionString = "********";
 
 // Set Wi-Fi information
 const char* ssid = "********";
