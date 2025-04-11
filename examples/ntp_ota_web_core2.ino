@@ -22,8 +22,10 @@ IPAddress local_IP(********);
 IPAddress gateway(********);
 IPAddress subnet(********);
 IPAddress primaryDNS(********);
+
+// WiFi Event Listener
 unsigned long lastReconnectAttempt = 0;
-const unsigned long reconnectInterval = 30000;  // 30s
+const unsigned long reconnectInterval = 30000;  // 30 seconds
 void WiFiEvent(WiFiEvent_t event) {
   if (event == WIFI_EVENT_STA_DISCONNECTED) {
     // Serial.println("[WiFi] Disconnected.");
