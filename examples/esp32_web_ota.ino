@@ -203,23 +203,26 @@ void loop() {
 
   // If a PPS signal is received and the time since the last PPS signal is less than 1500 milliseconds, update the time
   if (ppsFlag && (esp_timer_get_time() - lastPPSTime < 1500)) {
-    // Update NTPServer reference time
-    newTime.tm_year = gps.date.year() - 1900;  // struct tm requires year offset from 1900
-    newTime.tm_mon = gps.date.month() - 1;     // struct tm requires month offset from 0
-    newTime.tm_mday = gps.date.day();
-    newTime.tm_hour = gps.time.hour();
-    newTime.tm_min = gps.time.minute();
-    newTime.tm_sec = gps.time.second();
-    ntpServer.setReferenceTime(newTime, esp_timer_get_time());
+    // Make sure the GPS time data is up to date, otherwise do not set the time
+    if (gps.date.isUpdated() && gps.time.isUpdated() && gps.date.age() < 500 && gps.time.age() < 500) {
+      // Update NTPServer reference time
+      newTime.tm_year = gps.date.year() - 1900;  // struct tm requires year offset from 1900
+      newTime.tm_mon = gps.date.month() - 1;     // struct tm requires month offset from 0
+      newTime.tm_mday = gps.date.day();
+      newTime.tm_hour = gps.time.hour();
+      newTime.tm_min = gps.time.minute();
+      newTime.tm_sec = gps.time.second();
+      ntpServer.setReferenceTime(newTime, esp_timer_get_time());
     
-    // Update internal RTC time, which will be lost after reboot or power failure
-    time_t t = mktime(&newTime);
-    tv.tv_sec = t;
-    tv.tv_usec = esp_timer_get_time() - lastPPSTime;
-    settimeofday(&tv, NULL);
+      // Update internal RTC time, which will be lost after reboot or power failure
+      time_t t = mktime(&newTime);
+      tv.tv_sec = t;
+      tv.tv_usec = esp_timer_get_time() - lastPPSTime;
+      settimeofday(&tv, NULL);
 
-    ppsFlag = false;                     // Reset PPS signal flag
-    lastPPSTime = esp_timer_get_time();  // Update timestamp
+      ppsFlag = false;                     // Reset PPS signal flag
+      lastPPSTime = esp_timer_get_time();  // Update timestamp
+    }
   }
   ntpServer.update();  // Respond to NTP access
   ArduinoOTA.handle();
