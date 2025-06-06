@@ -174,7 +174,9 @@ void setup() {
 
   // Handle /data endpoint
   server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String timeString = String(gps.date.year()) + "/" + String(gps.date.month()) + "/" + String(gps.date.day()) + " " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second());
+    char timeBuf[20];
+    snprintf(timeBuf, sizeof(timeBuf), "%04d/%02d/%02d %02d:%02d:%02d", gps.date.year(), gps.date.month(), gps.date.day(), gps.time.hour(), gps.time.minute(), gps.time.second());
+    String GPStime = String(timeBuf);
 
     String nmeaData = "";
     for (int i = 0; i < 25; i++) {
@@ -184,7 +186,7 @@ void setup() {
     // Create a JSON object
     DynamicJsonDocument jsonDoc(512);
     jsonDoc["versionString"] = versionString;
-    jsonDoc["timeString"] = timeString;
+    jsonDoc["GPStime"] = GPStime;
     jsonDoc["nmeaData"] = nmeaData;
 
     // A JSON response occurs
