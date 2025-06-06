@@ -92,7 +92,7 @@ const char* index_html = R"rawliteral(
         </div>
         <div class="time">
             <h2>Date Time</h2>
-            <pre id="timeString">Loading time...</pre>
+            <pre id="GPStime">Loading time...</pre>
         </div>
         <div class="nmea">
             <h2>NMEA Data</h2>
@@ -121,7 +121,7 @@ const char* index_html = R"rawliteral(
             .then(response => response.json())
             .then(data => {
         document.getElementById('versionString').textContent = data.versionString;
-        document.getElementById('timeString').textContent = data.timeString;
+        document.getElementById('GPStime').textContent = data.GPStime;
         document.getElementById('nmeaData').textContent = data.nmeaData;
             })
             .catch(error => console.error('Error fetching data:', error));
