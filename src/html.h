@@ -173,7 +173,7 @@ const char* index_html = R"rawliteral(
         
             xhr.onload = function () {
                 if (xhr.status === 200) {
-                    alert('Update successful. Restarting...');
+                    alert('Update successful. Restarting.');
                     setTimeout(() => {
                         location.reload();
                     }, 1000);
