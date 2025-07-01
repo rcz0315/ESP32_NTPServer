@@ -103,6 +103,10 @@ void gpsTask(void *parameter) {
   }
 }
 
+// Delayed restart variable
+volatile bool restartRequested = false;
+unsigned long restartTime = 0;
+
 void setup() {
   Serial.begin(9600);
   ss.begin(9600, SERIAL_8N1, 16, 17, false);  // GPS 9600 / RX 16 / TX 17
@@ -197,9 +201,9 @@ void setup() {
 
   // Handle /restart endpoint
   server.on("/restart", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "text/plain", "Restarting...");
-    delay(500);  // Wait for the response to be sent
-    ESP.restart();
+    request->send(200, "text/plain", "Restarting.");
+    restartRequested = true;
+    restartTime = millis() + 1000;  // Delay 1 second
   });
 
   // OTA Endpoint
@@ -222,10 +226,10 @@ void setup() {
       if (final) {
         if (Update.end(true)) {
           Serial.printf("Update Success: %uB\n", index + length);
-          request->send(200, "text/plain", "Update successful. Restarting...");
+          request->send(200, "text/plain", "Update successful. Restarting.");
           Serial.flush();
-          delay(1000);
-          ESP.restart();
+          restartRequested = true;
+          restartTime = millis() + 1000;  // Delay 1 second
         } else {
           Update.printError(Serial);
           request->send(500, "text/plain", "Update failed!");
@@ -255,6 +259,10 @@ void loop() {
     }
   }
 
+  if (restartRequested && millis() >= restartTime) {
+    ESP.restart();
+  }
+  
   ntpServer.update();  // Respond to NTP access
   ArduinoOTA.handle();
 }
