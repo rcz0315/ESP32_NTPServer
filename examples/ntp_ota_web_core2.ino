@@ -245,7 +245,7 @@ void loop() {
 
     // Use ping to check 3 DNSs, once for each.
     bool pingFailed =
-      !Ping.ping("192.168.1.1", 1) && !Ping.ping("114.114.115.115", 1) && !Ping.ping("8.8.8.8", 1);
+      !Ping.ping("********", 1) && !Ping.ping("********", 1) && !Ping.ping("********", 1);
 
     // Restart ESP32 after 3 consecutive failures
     if (pingFailed) {
